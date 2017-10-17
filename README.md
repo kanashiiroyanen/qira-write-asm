@@ -1,7 +1,8 @@
-# QIRA
+# QIRA-Write-Asm
 
 [![Join the chat at https://gitter.im/BinaryAnalysisPlatform/qira](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/BinaryAnalysisPlatform/qira?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Build Status](https://travis-ci.org/BinaryAnalysisPlatform/qira.svg?branch=master)](https://travis-ci.org/BinaryAnalysisPlatform/qira)
 
+* QIRA-Write-Asm is a clone of QIRA and modified
 * QIRA is a competitor to strace and gdb
 * See http://qira.me/ for high level usage information
 * All QIRA code is released under GPLv2 or BSD
