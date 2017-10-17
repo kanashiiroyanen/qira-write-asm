@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# coding: utf-8 -yuike
 import os
 import sys
 basedir = os.path.dirname(os.path.realpath(__file__))
@@ -40,6 +41,7 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   # validate arguments
+  # ハイフンは，自動でアンダーバーに変換される -yuike
   if args.web_port < 1 or args.web_port > 65535:
     raise Exception("--web-port must be a valid port number (1-65535)")
   if args.socat_port < 1 or args.socat_port > 65534:
@@ -62,9 +64,11 @@ if __name__ == '__main__':
   qira_config.SOCAT_PORT = args.socat_port
   qira_config.FORK_PORT = args.socat_port + 1
 
+  # trace libraries
   if args.tracelibraries:
     qira_config.TRACE_LIBRARIES = True
 
+  # static analysis
   if args.static:
     print "*** using static"
     qira_config.WITH_STATIC = True
@@ -80,8 +84,11 @@ if __name__ == '__main__':
     qemu_args.append(args.gate_trace)
 
   # creates the file symlink, program is constant through server run
+  # ターゲットバイナリの初期化 -yuike
+  # 静的解析やアーキテクチャの特定をしている
   program = qira_program.Program(args.binary, args.args, qemu_args)
 
+  # サーバの初期化 -yuike
   is_qira_running = 1
   try:
     socket.create_connection(('127.0.0.1', qira_config.WEB_PORT))
@@ -95,10 +102,11 @@ if __name__ == '__main__':
   # start the binary runner
   if args.server:
     qira_socat.start_bindserver(program, qira_config.SOCAT_PORT, -1, 1, True)
-  else:
+  else: # Qira プログラムの起動 -yuike
     print "**** running "+program.program
     program.execqira(shouldfork=not is_qira_running)
 
+  # サーバの起動 -yuike
   if not is_qira_running:
     # start the http server
     qira_webserver.run_server(args, program)

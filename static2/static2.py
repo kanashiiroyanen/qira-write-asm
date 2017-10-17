@@ -1,4 +1,5 @@
 #!/usr/bin/env python2.7
+# coding: utf-8
 
 # NO MORE RADARE
 # tags should be dynamically generated
@@ -58,6 +59,10 @@ class Static:
     self.r2core = None
     self.debug = debug
 
+    # add -yuike
+    self.traces = {}
+    self.lib_f = []
+
     # radare doesn't seem to have a concept of names
     # doesn't matter if this is in the python
     self.rnames = {}
@@ -72,7 +77,8 @@ class Static:
     # concept from qira_program
     self.base_memory = {}
 
-    #pass static engine as an argument for testing
+    # pass static engine as an argument for testing
+    # default is "builtin" -yuike
     if static_engine is None:
       static_engine = qira_config.STATIC_ENGINE
 
@@ -101,11 +107,12 @@ class Static:
           print dat
     else:
       # run the elf loader
+      # qira/static2/builtin 以下のファイルをインポート可能に -yuike
       sys.path.append(os.path.join(qira_config.BASEDIR, "static2", "builtin"))
       import loader
       import analyzer
     self.analyzer = analyzer
-    loader.load_binary(self)
+    loader.load_binary(self) # ELFバイナリを解析
 
     if self.debug >= 1:
       print "*** elf loaded"
@@ -233,18 +240,88 @@ class Static:
   # TODO: refactor this! 
   def memory(self, address, ln):
     dat = []
-    for i in range(ln):
+    for i in range(ln): # 0~15 -yuike
       ri = address+i
 
       # hack for "RuntimeError: dictionary changed size during iteration"
+      # base_memory には，読み込んだバイナリの先頭と最後のアドレスが格納されている
       for (ss, se) in self.base_memory.keys():
+        # アドレス範囲の判定(プログラム全体のアドレス内かどうか見ている)
+        # ss = start_adress, se = end_address
         if ss <= ri and ri < se:
           try:
+            # [address, address+ln] の範囲のバイナリを取得
             dat.append(self.base_memory[(ss,se)][ri-ss])
+            #print "dat = ", repr(dat)
             break
           except:
             return ''.join(dat)
+    #print "0x%0x-0x%0x" % (ss, se)
     return ''.join(dat)
+
+
+  # add yuike
+  # return the memory at address:ln
+  # replaces get_static_bytes
+  # TODO: refactor this! 
+  def my_memory(self, address, ln):
+
+    dat = []
+    for i in range(ln): # 0~15 -yuike
+      ri = address+i
+
+      # hack for "RuntimeError: dictionary changed size during iteration"
+      # base_memory には，読み込んだバイナリの先頭と最後のアドレスが格納されている
+      for (ss, se) in self.base_memory.keys():
+        # アドレス範囲の判定(プログラム全体のアドレス内かどうか見ている)
+        # ss = start_adress, se = end_address
+        if ss <= ri and ri < se:
+          try:
+            # [address, address+ln] の範囲のバイナリを取得
+            dat.append(self.base_memory[(ss,se)][ri-ss])
+            #print "dat = ", repr(dat)
+            break
+          except:
+            return (''.join(dat), f)
+
+    for k, v in self.traces.items():
+      if v == ss:
+        f = open("/tmp/qira_logs/" + k + "_trace_asm", 'a')
+        f.write(hex(address-ss) + ":")
+        f.close()
+        break
+    #print "0x%0x-0x%0x" % (ss, se)
+    return (''.join(dat), k)
+
+  # 読み込んだライブラリの先頭と終わりのアドレスに，本体バイナリを対応させている
+  # -yuike
+  def my_add_memory_chunk(self, address, dat, file_name):
+    f_name = file_name.split("/")[-1]
+    if f_name not in self.traces:
+      self.traces[f_name] = address
+      
+    #for k, v in self.traces.items():
+    #  print "%s: 0x%0x" % (k, v)
+    #print "add segment",hex(address),len(dat)
+    """
+    i = 0
+    print "\n"
+    for (ss, se) in self.base_memory.keys():
+      print "0x%0x-0x%0x" % (ss, se)
+      i += 1
+    print "i = %d\n" % i
+    """
+    # check for dups
+    for (laddress, llength) in self.base_memory:
+      if address == laddress:
+        if self.base_memory[(laddress, llength)] != dat:
+          print "*** WARNING, changing segment",hex(laddress),llength
+        return
+
+    # segments should have an idea of segment permission
+    self['segments'].append((address, len(dat)))
+    # 本体バイナリを対応付け
+    self.base_memory[(address, address+len(dat))] = dat
 
   def add_memory_chunk(self, address, dat):
     #print "add segment",hex(address),len(dat)

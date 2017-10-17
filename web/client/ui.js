@@ -84,7 +84,7 @@ $(document).ready(function() {
 
   var controlPanel = myDocker.addPanel("Control", wcDocker.DOCK.RIGHT, timelinePanel);
 
-  controlPanel.maxSize(1000, 70);
+  controlPanel.maxSize(1000, 110);
   if (has_static) {
     var cfgPanel = myDocker.addPanel("Control Flow", wcDocker.DOCK.RIGHT, controlPanel);
     var flatPanel = myDocker.addPanel("Flat", wcDocker.DOCK.BOTTOM, cfgPanel, {h: 200});

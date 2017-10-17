@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from qira_base import *
 import qira_config
 import os
@@ -74,13 +76,18 @@ def push_updates(full = True):
   for i in program.traces:
     push_trace_update(i)
 
+# DB に更新があれば，WebUI に反映させる処理 -yuike
 def mwpoll():
   # poll for new traces, call this every once in a while
+  # "/tmp/0 or 1" というファイルのみ見ている
   for i in os.listdir(qira_config.TRACE_FILE_BASE):
     if "_" in i:
       continue
     i = int(i)
 
+    # 各プロセス用の Trace スレッドを追加(プロセスの情報管理するスレッド) -yuike
+    # qira_asm なども読み，実行アドレスを逐次逆アセンブルしている
+    # すべて，thread を作成し処理している
     if i not in program.traces:
       program.add_trace(qira_config.TRACE_FILE_BASE+str(i), i)
 
@@ -89,6 +96,7 @@ def mwpoll():
   for tn in program.traces:
     if program.traces[tn].db.did_update():
       t = program.traces[tn]
+      # strace ファイルの読み込み
       t.read_strace_file()
       socketio.emit('strace', {'forknum': t.forknum, 'dat': t.strace}, namespace='/qira')
       did_update = True
@@ -101,6 +109,7 @@ def mwpoll():
     program.read_asm_file()
     push_updates(False)
 
+# 0.2秒ごとに DB 監視する処理
 def mwpoller():
   while 1:
     time.sleep(0.2)
@@ -417,6 +426,7 @@ def serve(path):
 
 
 # must go at the bottom
+# qira server の起動
 def run_server(largs, lprogram):
   global args
   global program
@@ -429,6 +439,7 @@ def run_server(largs, lprogram):
   qira_webstatic.init(lprogram)
 
   print "****** starting WEB SERVER on %s:%d" % (qira_config.HOST, qira_config.WEB_PORT)
+  # DB 監視スレッドを起動
   threading.Thread(target=mwpoller).start()
   try:
     socketio.run(app, host=qira_config.HOST, port=qira_config.WEB_PORT, log=open("/dev/null", "w"))

@@ -1,3 +1,5 @@
+# coding: utf-8
+
 from capstone import *
 import capstone # for some unexported (yet) symbols in Capstone 3.0
 import qira_config
@@ -19,6 +21,7 @@ class DESTTYPE(object):
   call = 3
   implicit = 4
 
+# 逆アセンブルする処理: with Capstone etc..
 class Instruction(object):
   def __new__(cls, *args, **kwargs):
     if qira_config.WITH_BAP:
@@ -27,7 +30,7 @@ class Instruction(object):
       except Exception as exn:
         print "bap failed", type(exn).__name__, exn
         return CsInsn(*args, **kwargs)
-    else:
+    else: # 通常はコッチ
       return CsInsn(*args, **kwargs)
 
 class BapInsn(object):
@@ -238,6 +241,7 @@ class IgnoredRegister(Exception):
     self.reg = reg
 
 # Instruction class
+# Capstone のクラス -yuike
 class CsInsn(object):
   """one disassembled instruction"""
   def __init__(self, raw, address, arch):
@@ -264,7 +268,9 @@ class CsInsn(object):
       raise Exception('arch "{}" not supported by capstone'.format(arch))
     self.md.detail = True
     try:
+      #print "addr = 0x%0x" % self.address, self.raw # -yuike
       self.i = self.md.disasm(self.raw, self.address).next()
+      #print "size = %d" % self.i.size # -yuike
       self.decoded = True
       self.regs_read = self.i.regs_read
       self.regs_write = self.i.regs_write
@@ -585,16 +591,18 @@ class Block:
   def add(self, address):
     self.addresses.add(address)
 
-
+# タグ付けして，命令実行する -yuike
 class Tags:
   def __init__(self, static, address=None):
     self.backing = {}
     self.static = static
     self.address = address
 
+  # キーを含んでいるか検索: ビルトイン関数
   def __contains__(self, tag):
     return tag in self.backing
 
+  # キーを取得し，対応する処理を実施: ビルトイン関数
   def __getitem__(self, tag):
     if tag in self.backing:
       return self.backing[tag]
@@ -602,11 +610,25 @@ class Tags:
       # should reading the instruction tag trigger disasm?
       # and should dests be a seperate tag?
       if tag == "instruction":
-        dat = self.static.memory(self.address, 0x10)
+        # x86 の 17バイト命令に対応するため，0x10 バイト読込む
+        # address から 0x10 分までのバイナリデータを取得
+        #dat = self.static.memory(self.address, 0x10) 
+        dat, k = self.static.my_memory(self.address, 0x10) # yuike
         # arch should probably come from the address with fallthrough
+        # self.backing[] に，逆アセンブル結果が格納
         self.backing['instruction'] = Instruction(dat, self.address, self.static[self.address]['arch'])
         self.backing['len'] = self.backing['instruction'].size()
+        #print "0x%0x" % self.address, ":", self.backing['instruction'], ":", self.backing['len'] # -yuike
+        #print self.backing['len']
         self.backing['type'] = 'instruction'
+
+        # add -yuike
+        #print "len = %d" % self.backing['len']
+        #print "/tmp/qira_logs/" + k + "_trace_asm"
+        f = open("/tmp/qira_logs/" + k + "_trace_asm", 'a')
+        f.write(str(self.backing['len']) + '\n')
+        f.close()
+
         return self.backing[tag]
       if tag == "crefs" or tag == "xrefs":
         # crefs has a default value of a new array
@@ -616,12 +638,14 @@ class Tags:
         return self.static.global_tags[tag]
       return None
 
+  # キーを取得し，対応するキーを削除: ビルトイン関数
   def __delitem__(self, tag):
     try:
       del self.backing[tag]
     except:
       pass
 
+  # キーに対応する値を設定: ビルトイン関数
   def __setitem__(self, tag, val):
     if tag == "instruction" and type(val) == str:
       raise Exception("instructions shouldn't be strings")

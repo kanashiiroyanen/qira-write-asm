@@ -1,22 +1,27 @@
 /* haddrline */
+/* メモリマップの箇所 */
 
+/* メモリマップのマージン */
 .pchunks {
-  margin-left: 10px;
-  margin-right: 10px;
+  margin-left: 15px;
+  margin-right: 15px;
   display: inline-block;
 }
 
+/* メモリの表示範囲 */
 .pchunk {
-  height: 40px;
+  height: 70px;
   width: 15px;
   display: inline-block;
   background-color: #444444;
 }
 
+/* 実行可能メモリの色 */
 .pchunkinstruction {
   background-color: #550000 !important;
 }
 
+/* メモリの色 */
 .pchunkmemory {
   background-color: #444422 !important;
 }
@@ -29,20 +34,23 @@
   background: rgba(255, 119, 119, 0.3);
 }
 
+/* メモリマップ全体の設定 */
 #haddrline {
-  height: 40px;
-  border-bottom: 1px solid black;
-  border-left: 1px solid black;
-  border-right: 1px solid black;
+  height: 70px;
+  /*border-bottom: 1px solid black;*/
+  /*border-left: 1px solid black;  */
+  /*border-right: 1px solid black; */
   background-color: #282828;
-  overflow: hidden;
-  /*width: 624px;*/
+  /*overflow: hidden;*/
+  overflow: auto;
+  width: 1024px;
   white-space: nowrap;
 }
 
+/* メモリマップへ反映される際の設定 */
 .hflag {
   width: 2px;
-  height: 40px;
+  height: 70px;
   font-family: monospace;
   color: gray;
   position: relative;
@@ -50,12 +58,14 @@
 }
 
 
+/* 実行命令の行番号 */
 #control_clnum {
   /*width: 115px;*/
   width: 21%;
   color: blue;
 }
 
+/* fork番号 */
 #control_forknum {
   /*width: 120px;*/
   /*width: 21%;*/
@@ -64,12 +74,14 @@
   margin-left: 1%;
 }
 
+/* 命令アドレス */
 #control_iaddr {
   color: #CC0000;
   width: 25%;
   margin-left: 1%;
 }
 
+/* クリックしたところのメモリアドレス */
 #control_daddr {
   color: #888800;
   width: 25%;
@@ -78,6 +90,7 @@
 
 /* vertical timeline and flags */
 
+/* タイムラインの箇所 */
 .vtimeline {
   background-color: #282828;
   width: 45px;
@@ -88,6 +101,7 @@
   position: relative;
 }
 
+/* タイムラインのクリック箇所 */
 .flag {
   width: 45px;
   height: 2px;

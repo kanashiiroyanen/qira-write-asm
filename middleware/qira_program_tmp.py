@@ -425,7 +425,6 @@ class Trace:
     self.db = qiradb.Trace(fn, forknum, r1, r2, r3)
 
     # "/tmp/0 などのファイルの初期化"
-    # 必要とされるライブラリなどを読み込む
     self.load_base_memory()
 
     # analysis stuff
@@ -526,66 +525,59 @@ class Trace:
               print st,
               dat = alldat[off:off+sz]
 
-              #self.program.static.add_memory_chunk(return_code, dat)
-              self.program.static.my_add_memory_chunk(return_code, dat, files[fil]) # -yuike
+              self.program.static.add_memory_chunk(return_code, dat)
               print "done"
 
               # add yuike
-              # ライブラリを逆アセンブルする処理
-              #self.write_lib_asm(return_code, sz, off, files[fil])
+              # 読み込んだライブラリをすべて逆アセンブルし，ファイル書き出し
+              #import model
+              import time
+
+              current_addr = return_code
+              #for (ss, se) in self.program.static.base_memory.keys():
+              #  print "0x%0x-0x%0x" % (ss, se)
+
+              end_addr = return_code + sz
+
+              if files[fil] == "/lib/x86_64-linux-gnu/libc.so.6" and off == 0:
+              #if off == 0: # すべて取得するとき
+                asm_list = []
+                f_name = files[fil].split("/")[-1] # ファイル名のみ切り出し
+                f = open('/tmp/qira_logs/'+f_name+"_asm", 'w');
+
+                start_time = time.time()
+
+                while current_addr < end_addr:
+                  try:
+                    dat = self.program.static.memory(current_addr, 0x10)
+                    #print "dat = ", repr(dat)
+                    inst = model.CsInsn(dat, current_addr, 'x86-64')
+                    #print "0x%0X" % inst.i.address, inst.i.mnemonic, inst.i.op_str
+                    asm_line = hex(current_addr-return_code) + ":" + str(inst.i.size) + "\n"
+                    asm_list.append(asm_line)
+                    #print asm_line
+                    current_addr += inst.i.size
+
+                  except Exception, e:
+                    pass
+                    current_addr += 1
+
+                elapsed_time = time.time() - start_time
+                print ("elapsed_time:{0}".format(elapsed_time))
+
+                f.writelines(asm_list)
+                f.close()
+              # end yuike
 
             except Exception, e:
               print e
+
 
       except:
         pass
       ret.append({"clnum": clnum, "pid":pid, "sc": sc})
 
     self.strace = ret
-  
-  # add yuike
-  # 読み込んだライブラリをすべて逆アセンブルし，ファイル書き出し
-  def write_lib_asm(self, return_code, sz, off, lib_file):
-    #import model
-    import time
-
-    current_addr = return_code
-    #for (ss, se) in self.program.static.base_memory.keys():
-    #  print "0x%0x-0x%0x" % (ss, se)
-
-    end_addr = return_code + sz
-
-    #if (lib_file == "/lib/x86_64-linux-gnu/libc.so.6" and off == 0) or (lib_file == self.program.static.path and off == 0):
-    if (lib_file == "/lib/x86_64-linux-gnu/libc-2.23.so" and off == 0) or (lib_file == self.program.static.path and off == 0):
-    #if off == 0: # すべて取得するとき
-      asm_list = []
-      f_name = lib_file.split("/")[-1] # ファイル名のみ切り出し
-      f = open('/tmp/qira_logs/'+f_name+"_asm", 'w');
-
-      start_time = time.time()
-
-      while current_addr < end_addr:
-        try:
-          dat = self.program.static.memory(current_addr, 0x10)
-          #print "dat = ", repr(dat)
-          inst = model.CsInsn(dat, current_addr, 'x86-64')
-          #print "0x%0X" % inst.i.address, inst.i.mnemonic, inst.i.op_str
-          #print hex(current_addr-return_code), inst.i.mnemonic, inst.i.op_str, str(inst.i.size)
-          asm_line = hex(current_addr-return_code) + ":" + str(inst.i.size) + "\n"
-          asm_list.append(asm_line)
-          #print asm_line
-          current_addr += inst.i.size
-
-        except Exception, e:
-          pass
-          current_addr += 1
-
-      elapsed_time = time.time() - start_time
-      print ("elapsed_time:{0}".format(elapsed_time))
-
-      f.writelines(asm_list)
-      f.close()
-    # end yuike
 
   # 0.2秒ごとに DB のファイルをチェック -yuike
   def analysis_thread(self):
@@ -698,10 +690,4 @@ class Trace:
         continue
 
       # バイナリの先頭アドレスと終了アドレスを格納
-      # バイナリが読み込まないライブラリも格納する
-      self.program.static.my_add_memory_chunk(ss, dat, fn)
-
-      # add yuike
-      # バイナリとライブラリを逆アセンブルする処理
-      print "0x%0x-0x%0x" % (ss, se), hex(se-ss), hex(offset), fn
-      self.write_lib_asm(ss, se-ss, offset, fn)
+      self.program.static.add_memory_chunk(ss, dat)

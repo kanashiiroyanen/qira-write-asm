@@ -1,8 +1,8 @@
 #!/bin/bash -e
 unamestr=$(uname)
-if [[ "$unamestr" == 'Linux' ]]; then
+if [[ "$unamestr" == 'Linux' ]]; then # Linux
   DIR=$(dirname $(readlink -f $0))
-elif [[ "$unamestr" == "Darwin" ]]; then
+elif [[ "$unamestr" == "Darwin" ]]; then # Mac
   cmd=$(which "$0")
   if [ -L "$cmd" ]; then
     cmd=$(readlink "$cmd")
@@ -13,6 +13,7 @@ else
   exit
 fi
 
+# Python の環境をqira独自のものに virtual_env 使用
 unset PYTHONPATH
 source $DIR/venv/bin/activate
 exec /usr/bin/env python2.7 $DIR/middleware/qira.py $*

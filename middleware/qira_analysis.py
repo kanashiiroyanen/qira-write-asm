@@ -1,4 +1,6 @@
 #!/usr/bin/env python2.7
+# coding: utf-8
+
 import qira_config
 import qira_program
 import arch

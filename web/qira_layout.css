@@ -31,11 +31,13 @@ td {
 }
 
 .fill {
-  overflow-y: hidden;
+  /*overflow-y: hidden;*/
+  overflow: hidden;
 }
 
 /* controls */
 
+/* 余白 */
 #controls {
   padding-top: 4px;
   padding-bottom: 4px;
